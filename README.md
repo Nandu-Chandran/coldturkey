@@ -2,6 +2,12 @@
 
 A comprehensive test automation framework for API testing using httpbin.org as the target service.
 
+> ⚠️ **Disclaimer:**  
+> The public [httpbin.org](https://httpbin.org) service is often unreliable and may return **503 errors**.  
+> To ensure stability, this framework uses a **Dockerized local httpbin container** to simulate the API.  
+>  
+
+
 ## Features
 
 - **Configuration Management**: YAML and .env file support
@@ -146,6 +152,8 @@ When httpbin.org is unavailable, the framework automatically:
 - Skips external tests
 - Provides mock-based alternatives
 - Continues execution with available tests
+
+> Created a configurable variable, that default to 'internal' httpbin service for testing.
 
 ### Reporting
 

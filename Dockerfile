@@ -8,11 +8,11 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
-    openjdk-11-jdk \
+    default-jdk \
     && rm -rf /var/lib/apt/lists/*
 
 # Set JAVA_HOME
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/default-java
 ENV PATH=$PATH:$JAVA_HOME/bin
 
 # Copy requirements first for better caching

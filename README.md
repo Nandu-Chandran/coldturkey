@@ -9,8 +9,23 @@ A comprehensive test automation framework for API testing using httpbin.org as t
 - **Test Data Generation**: Faker-based utilities for randomized data
 - **Reporting**: Allure and HTML reports with automatic generation
 - **Messaging Integration**: RabbitMQ support for message queue testing
-- **Observability**: Prometheus metrics collection
+- **Observability**: Prometheus metrics collection (local development)
 - **Dockerized Environment**: Complete docker-compose setup
+- **CI/CD Optimized**: Separate configurations for local vs CI environments
+
+## Docker Compose Configurations
+
+### Local Development (`docker-compose.yml`)
+- **Full stack**: httpbin, RabbitMQ, Prometheus, Grafana
+- **Metrics collection**: Prometheus for observability
+- **Visualization**: Grafana dashboards
+- **Complete monitoring**: Full observability stack
+
+### CI/CD (`docker-compose.ci.yml`)
+- **Minimal stack**: httpbin, RabbitMQ only
+- **No metrics**: Excludes Prometheus/Grafana
+- **Faster execution**: Optimized for CI performance
+- **Resource efficient**: Minimal resource usage
 
 ## Project Structure
 

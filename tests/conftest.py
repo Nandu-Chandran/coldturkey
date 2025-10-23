@@ -21,6 +21,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "integration: mark test as integration test")
     config.addinivalue_line("markers", "external: mark test as requiring external service")
     config.addinivalue_line("markers", "rabbitmq: mark test as requiring RabbitMQ")
+    config.addinivalue_line("markers", "unit: mark test as unit test (no external services)")
 
 def pytest_collection_modifyitems(config, items):
     """Modify test collection to skip external tests if service is unavailable"""
@@ -35,10 +36,19 @@ def pytest_collection_modifyitems(config, items):
                 not _is_rabbitmq_available(),
                 reason="RabbitMQ is not available"
             ))
+        # Unit tests don't need external services
+        if "unit" in item.keywords:
+            # Unit tests should not require external services
+            pass
 
 def _is_httpbin_available():
     """Check if httpbin service is available based on configuration"""
     try:
+        # Check if external services should be skipped (for unit tests)
+        if os.getenv('SKIP_EXTERNAL_SERVICES') == '1':
+            print("External services are disabled for unit tests")
+            return False
+        
         config = load_config()
         ext_http = config.get('ext_http', 0)
         
@@ -59,6 +69,11 @@ def _is_rabbitmq_available():
     try:
         import pika
         import time
+        
+        # Check if external services should be skipped (for unit tests)
+        if os.getenv('SKIP_EXTERNAL_SERVICES') == '1':
+            print("External services are disabled for unit tests")
+            return False
         
         # Check if RabbitMQ tests should be skipped
         config = load_config()

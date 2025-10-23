@@ -21,7 +21,7 @@ jobs:
       run: docker compose build test-framework
       
     - name: Start services
-      run: docker compose up -d
+      run: docker compose -f docker-compose.ci.yml up -d
       
     - name: Wait for services
       run: |
@@ -50,11 +50,11 @@ jobs:
         docker compose ps
       
     - name: Run tests
-      run: docker compose run --rm test-framework
+      run: docker compose -f docker-compose.ci.yml run --rm test-framework
       
     - name: Generate reports
       run: |
-        docker compose run --rm test-framework allure generate allure-results --clean -o allure-report
+        docker compose -f docker-compose.ci.yml run --rm test-framework allure generate allure-results --clean -o allure-report
         
     - name: Upload test results
       uses: actions/upload-artifact@v4

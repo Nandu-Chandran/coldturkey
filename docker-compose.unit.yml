@@ -1,0 +1,18 @@
+services:
+  # Test framework for unit tests only (no external services)
+  test-framework:
+    build: .
+    volumes:
+      - ./allure-results:/app/allure-results
+      - ./allure-report:/app/allure-report
+      - ./reports:/app/reports
+    environment:
+      - PYTHONPATH=/app/src
+      - SKIP_EXTERNAL_SERVICES=1
+    networks:
+      - test-network
+    command: ["pytest", "-v", "-m", "unit", "--alluredir=allure-results", "--html=reports/unit-report.html", "--self-contained-html"]
+
+networks:
+  test-network:
+    driver: bridge

@@ -1,0 +1,5 @@
+base_url: "https://httpbin.org"
+timeout: 5
+retry:
+  attempts: 3
+  backoff_seconds: 1

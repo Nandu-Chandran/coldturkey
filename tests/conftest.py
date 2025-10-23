@@ -37,10 +37,20 @@ def pytest_collection_modifyitems(config, items):
             ))
 
 def _is_httpbin_available():
-    """Check if httpbin.org is available"""
+    """Check if httpbin service is available based on configuration"""
     try:
-        response = requests.get("https://httpbin.org/get", timeout=5)
-        return response.status_code == 200
+        config = load_config()
+        ext_http = config.get('ext_http', 0)
+        
+        if ext_http == 1:
+            # Check external httpbin.org
+            response = requests.get("https://httpbin.org/get", timeout=5)
+            return response.status_code == 200
+        else:
+            # Check internal containerized httpbin
+            base_url = config.get('base_url', 'http://httpbin:80')
+            response = requests.get(f"{base_url}/get", timeout=5)
+            return response.status_code == 200
     except:
         return False
 
@@ -48,10 +58,21 @@ def _is_rabbitmq_available():
     """Check if RabbitMQ is available"""
     try:
         import pika
-        params = pika.URLParameters("amqp://guest:guest@localhost:5672/")
-        conn = pika.BlockingConnection(params)
-        conn.close()
-        return True
+        # Try Docker RabbitMQ first, then localhost
+        urls = [
+            "amqp://guest:guest@rabbitmq:5672/",  # Docker service name
+            "amqp://guest:guest@localhost:5672/"  # Localhost fallback
+        ]
+        
+        for url in urls:
+            try:
+                params = pika.URLParameters(url)
+                conn = pika.BlockingConnection(params)
+                conn.close()
+                return True
+            except:
+                continue
+        return False
     except:
         return False
 

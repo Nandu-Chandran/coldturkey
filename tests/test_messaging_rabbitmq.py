@@ -12,11 +12,24 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 def _is_rabbitmq_available(config):
     """Check if RabbitMQ is available"""
     try:
-        url = config['rabbitmq'].get('url') or "amqp://guest:guest@localhost:5672/"
-        params = pika.URLParameters(url)
-        conn = pika.BlockingConnection(params)
-        conn.close()
-        return True
+        # Try configured URL first, then Docker service, then localhost
+        urls = [
+            config['rabbitmq'].get('url'),
+            "amqp://guest:guest@rabbitmq:5672/",  # Docker service name
+            "amqp://guest:guest@localhost:5672/"   # Localhost fallback
+        ]
+        
+        for url in urls:
+            if not url:
+                continue
+            try:
+                params = pika.URLParameters(url)
+                conn = pika.BlockingConnection(params)
+                conn.close()
+                return True
+            except:
+                continue
+        return False
     except:
         return False
 
@@ -27,7 +40,13 @@ def test_publish_and_consume_rabbitmq(config):
     if not _is_rabbitmq_available(config):
         pytest.skip("RabbitMQ is not available")
     
-    url = config['rabbitmq'].get('url') or "amqp://guest:guest@localhost:5672/"
+    # Use the same URL selection logic as availability check
+    urls = [
+        config['rabbitmq'].get('url'),
+        "amqp://guest:guest@rabbitmq:5672/",  # Docker service name
+        "amqp://guest:guest@localhost:5672/"   # Localhost fallback
+    ]
+    url = next((u for u in urls if u), "amqp://guest:guest@localhost:5672/")
     params = pika.URLParameters(url)
     conn = pika.BlockingConnection(params)
     ch = conn.channel()
@@ -59,7 +78,13 @@ def test_publish_and_consume_rabbitmq_mock(config):
     mock_channel.basic_get.return_value = (Mock(), Mock(), message_body.encode())
     
     with patch('pika.BlockingConnection', return_value=mock_conn):
-        url = config['rabbitmq'].get('url') or "amqp://guest:guest@localhost:5672/"
+        # Use the same URL selection logic as availability check
+        urls = [
+            config['rabbitmq'].get('url'),
+            "amqp://guest:guest@rabbitmq:5672/",  # Docker service name
+            "amqp://guest:guest@localhost:5672/"   # Localhost fallback
+        ]
+        url = next((u for u in urls if u), "amqp://guest:guest@localhost:5672/")
         params = pika.URLParameters(url)
         conn = pika.BlockingConnection(params)
         ch = conn.channel()

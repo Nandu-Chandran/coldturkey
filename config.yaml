@@ -1,5 +1,9 @@
 base_url: "http://httpbin:80"
 timeout: 10
+# External httpbin configuration
+# ext_http: 1 = Check external httpbin.org for external tests
+# ext_http: 0 = Use internal containerized httpbin (default)
+ext_http: 0
 retry:
   attempts: 5
   backoff_seconds: 2

@@ -18,7 +18,7 @@ jobs:
       uses: docker/setup-buildx-action@v3
       
     - name: Build test framework
-      run: docker compose build test-framework
+      run: docker compose build --no-cache test-framework
       
     - name: Start services
       run: docker compose -f docker-compose.ci.yml up -d
@@ -92,7 +92,7 @@ jobs:
       uses: docker/setup-buildx-action@v3
       
     - name: Build test framework
-      run: docker compose build test-framework
+      run: docker compose build --no-cache test-framework
       
     - name: Start services
       run: docker compose -f docker-compose.ci.yml up -d

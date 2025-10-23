@@ -173,10 +173,10 @@ def test_config_environment_variables():
     try:
         config = load_config()
         
-        # Test that environment variables are loaded
-        assert config.get('httpbin_url') == 'http://test-env:80'
-        assert config.get('rabbitmq_url') == 'amqp://test:test@test:5672/'
-        assert config.get('prometheus_url') == 'http://test-prometheus:9090'
+        # Test that environment variables are loaded (check the actual keys used by load_config)
+        assert config.get('base_url') == 'http://test-env:80'  # HTTPBIN_URL sets base_url
+        assert config.get('rabbitmq', {}).get('url') == 'amqp://test:test@test:5672/'  # RABBITMQ_URL sets rabbitmq.url
+        assert config.get('prometheus_url') == 'http://test-prometheus:9090'  # PROMETHEUS_URL sets prometheus_url
     finally:
         # Clean up environment variables
         for key in ['HTTPBIN_URL', 'RABBITMQ_URL', 'PROMETHEUS_URL']:

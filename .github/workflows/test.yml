@@ -25,9 +25,29 @@ jobs:
       
     - name: Wait for services
       run: |
-        sleep 10
-        curl -f http://localhost:8080/get || echo "httpbin not ready"
-        curl -f http://localhost:15672 || echo "RabbitMQ not ready"
+        echo "Waiting for services to be ready..."
+        # Wait for httpbin
+        for i in {1..30}; do
+          if curl -f http://localhost:8080/get > /dev/null 2>&1; then
+            echo "httpbin is ready"
+            break
+          fi
+          echo "Waiting for httpbin... attempt $i"
+          sleep 2
+        done
+        
+        # Wait for RabbitMQ
+        for i in {1..30}; do
+          if curl -f http://localhost:15672 > /dev/null 2>&1; then
+            echo "RabbitMQ is ready"
+            break
+          fi
+          echo "Waiting for RabbitMQ... attempt $i"
+          sleep 2
+        done
+        
+        # Show service status
+        docker compose ps
       
     - name: Run tests
       run: docker compose run --rm test-framework

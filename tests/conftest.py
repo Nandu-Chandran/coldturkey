@@ -58,22 +58,42 @@ def _is_rabbitmq_available():
     """Check if RabbitMQ is available"""
     try:
         import pika
+        import time
+        
+        # Check if RabbitMQ tests should be skipped
+        config = load_config()
+        skip_rabbitmq = config.get('skip_rabbitmq', 0)
+        if skip_rabbitmq == 1:
+            print("RabbitMQ tests are disabled by configuration")
+            return False
+        
         # Try Docker RabbitMQ first, then localhost
         urls = [
             "amqp://guest:guest@rabbitmq:5672/",  # Docker service name
             "amqp://guest:guest@localhost:5672/"  # Localhost fallback
         ]
         
+        # Try each URL with retries for CI environments
         for url in urls:
-            try:
-                params = pika.URLParameters(url)
-                conn = pika.BlockingConnection(params)
-                conn.close()
-                return True
-            except:
-                continue
+            for attempt in range(3):  # Try up to 3 times
+                try:
+                    params = pika.URLParameters(url)
+                    # Set shorter timeout for CI
+                    params.connection_attempts = 1
+                    params.retry_delay = 1
+                    conn = pika.BlockingConnection(params)
+                    conn.close()
+                    print(f"RabbitMQ connection successful: {url}")
+                    return True
+                except Exception as e:
+                    print(f"RabbitMQ connection attempt {attempt + 1} failed for {url}: {e}")
+                    if attempt < 2:  # Don't sleep on last attempt
+                        time.sleep(2)
+                    continue
+        print("All RabbitMQ connection attempts failed")
         return False
-    except:
+    except Exception as e:
+        print(f"RabbitMQ availability check failed: {e}")
         return False
 
 @pytest.fixture(scope="session")

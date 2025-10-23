@@ -4,6 +4,11 @@ timeout: 10
 # ext_http: 1 = Check external httpbin.org for external tests
 # ext_http: 0 = Use internal containerized httpbin (default)
 ext_http: 0
+
+# RabbitMQ configuration
+# skip_rabbitmq: 1 = Skip RabbitMQ tests (useful for CI environments)
+# skip_rabbitmq: 0 = Run RabbitMQ tests (default)
+skip_rabbitmq: 0
 retry:
   attempts: 5
   backoff_seconds: 2

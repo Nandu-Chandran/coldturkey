@@ -1,0 +1,116 @@
+services:
+  # Local httpbin service (alternative to external httpbin.org)
+  httpbin:
+    image: kennethreitz/httpbin
+    ports:
+      - "8080:80"
+    networks:
+      - test-network
+
+  # RabbitMQ message broker
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - test-network
+
+  # Prometheus metrics collection
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    depends_on:
+      - httpbin
+      - rabbitmq
+    networks:
+      - test-network
+
+  # Grafana visualization
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - test-network
+
+  # Test framework
+  test-framework:
+    build: .
+    volumes:
+      - ./allure-results:/app/allure-results
+      - ./allure-report:/app/allure-report
+      - ./reports:/app/reports
+    environment:
+      - PYTHONPATH=/app/src
+      - HTTPBIN_URL=http://httpbin:80
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PROMETHEUS_URL=http://prometheus:9090
+    depends_on:
+      - httpbin
+      - rabbitmq
+    networks:
+      - test-network
+    command: ["pytest", "-v", "--alluredir=allure-results", "--html=reports/report.html", "--self-contained-html"]
+
+  # Test runner with different configurations
+  test-runner-mock:
+    build: .
+    volumes:
+      - ./allure-results:/app/allure-results
+      - ./allure-report:/app/allure-report
+      - ./reports:/app/reports
+    environment:
+      - PYTHONPATH=/app/src
+    networks:
+      - test-network
+    command: ["pytest", "-v", "-m", "not external", "--alluredir=allure-results", "--html=reports/mock-report.html", "--self-contained-html"]
+
+  # Test runner for external services only
+  test-runner-external:
+    build: .
+    volumes:
+      - ./allure-results:/app/allure-results
+      - ./allure-report:/app/allure-report
+      - ./reports:/app/reports
+    environment:
+      - PYTHONPATH=/app/src
+      - HTTPBIN_URL=http://httpbin:80
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - httpbin
+      - rabbitmq
+    networks:
+      - test-network
+    command: ["pytest", "-v", "-m", "external", "--alluredir=allure-results", "--html=reports/external-report.html", "--self-contained-html"]
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  grafana-storage:
+

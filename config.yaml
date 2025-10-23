@@ -1,5 +1,14 @@
-base_url: "https://httpbin.org"
-timeout: 5
+base_url: "http://httpbin:80"
+timeout: 10
 retry:
-  attempts: 3
-  backoff_seconds: 1
+  attempts: 5
+  backoff_seconds: 2
+rabbitmq:
+  url: "amqp://guest:guest@rabbitmq:5672/"
+  queue: "test_queue"
+metrics:
+  port: 8001
+docker:
+  httpbin_url: "http://httpbin:80"
+  rabbitmq_url: "amqp://guest:guest@rabbitmq:5672/"
+  prometheus_url: "http://prometheus:9090"

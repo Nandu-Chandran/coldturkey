@@ -8,3 +8,4 @@ allure-pytest
 pytest-xdist
 pika
 prometheus-client
+docker

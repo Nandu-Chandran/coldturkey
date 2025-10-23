@@ -1,4 +1,6 @@
-from faker import faker
+from faker import Faker
+
+_fake = Faker()
 
 def random_user():
     return{

@@ -123,6 +123,9 @@ jobs:
 
   security-scan:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -140,3 +143,12 @@ jobs:
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
+      continue-on-error: true
+      
+    - name: Upload security scan as artifact (fallback)
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-scan-results
+        path: trivy-results.sarif
+        retention-days: 30

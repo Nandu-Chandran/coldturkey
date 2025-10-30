@@ -49,20 +49,45 @@ jobs:
         # Show service status
         docker compose ps
       
-    - name: Run tests
-      run: docker compose -f docker-compose.ci.yml run --rm test-framework
-      
-    - name: Generate reports
+    - name: Run ${{ matrix.test-type }} tests
       run: |
-        docker compose -f docker-compose.ci.yml run --rm test-framework allure generate allure-results --clean -o allure-report
-        
-    - name: Upload test results
+        mkdir -p ./artifacts/allure-results ./artifacts/allure-report ./artifacts/reports
+
+        case "${{ matrix.test-type }}" in
+          "mock")
+            docker compose -f docker-compose.ci.yml run --rm \
+              -v ${{ github.workspace }}/artifacts/allure-results:/app/allure-results \
+              -v ${{ github.workspace }}/artifacts/reports:/app/reports \
+              test-runner-mock
+            ;;
+          "external")
+            docker compose -f docker-compose.ci.yml run --rm \
+              -v ${{ github.workspace }}/artifacts/allure-results:/app/allure-results \
+              -v ${{ github.workspace }}/artifacts/reports:/app/reports \
+              test-runner-external
+            ;;
+          "unit")
+            docker compose -f docker-compose.unit.yml run --rm \
+              -v ${{ github.workspace }}/artifacts/allure-results:/app/allure-results \
+              -v ${{ github.workspace }}/artifacts/reports:/app/reports \
+              test-framework
+            ;;
+        esac
+
+    - name: Generate Allure report
+      run: |
+        docker compose -f docker-compose.ci.yml run --rm \
+          -v ${{ github.workspace }}/artifacts/allure-results:/app/allure-results \
+          -v ${{ github.workspace }}/artifacts/allure-report:/app/allure-report \
+          test-framework allure generate allure-results --clean -o allure-report
+
+    - name: Upload ${{ matrix.test-type }} results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-results
+        name: ${{ matrix.test-type }}-test-results
         path: |
-          allure-results/
-          allure-report/
-          reports/
-        retention-days: 30
+          artifacts/allure-results/
+          artifacts/allure-report/
+          artifacts/reports/
+        retention-days: 7

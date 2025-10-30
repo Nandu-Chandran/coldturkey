@@ -67,8 +67,10 @@ services:
       - HTTPBIN_URL=http://httpbin:80
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
     depends_on:
-      - httpbin
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      httpbin:
+        condition: service_started
     networks:
       - test-network
     command: ["pytest", "-v", "-m", "external", "--alluredir=allure-results", "--html=reports/external-report.html", "--self-contained-html"]

@@ -95,30 +95,25 @@ jobs:
           ls -la allure-report/ || echo "Directory is empty or doesn't exist"
         fi
         
-    - name: Upload Allure results (raw)
-      uses: actions/upload-artifact@v4
+    - name: Package all test artifacts into a single zip
       if: always()
-      with:
-        name: allure-results-raw
-        path: allure-results/
-        retention-days: 30
+      run: |
+        mkdir -p packaged
+        # Copy only if they exist to avoid failures
+        [ -d allure-results ] && cp -a allure-results packaged/ || true
+        [ -d allure-report ] && cp -a allure-report packaged/ || true
+        [ -d reports ] && cp -a reports packaged/ || true
+        cd packaged
+        zip -r test-results.zip .
+        cd ..
+        ls -la packaged/
         
-    - name: Upload Allure report (HTML)
+    - name: Upload consolidated test-results.zip
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: allure-report-html
-        path: allure-report/
-        retention-days: 30
-        if-no-files-found: warn
-        
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: |
-          reports/
+        name: test-results-zip
+        path: packaged/test-results.zip
         retention-days: 30
 
   test-matrix:

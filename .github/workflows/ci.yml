@@ -20,8 +20,12 @@ jobs:
     - name: Build test framework
       run: docker compose build --no-cache test-framework
       
+    - name: Create report directories
+      run: |
+        mkdir -p allure-results allure-report reports
+        
     - name: Start services
-      run: docker compose -f docker-compose.ci.yml up -d
+      run: docker compose up -d
       
     - name: Wait for services
       run: |
@@ -50,14 +54,63 @@ jobs:
         docker compose ps
       
     - name: Run all tests
-      run: docker compose -f docker-compose.ci.yml run --rm test-framework
+      run: docker compose run --rm test-framework
       
     - name: Run mock tests
-      run: docker compose -f docker-compose.ci.yml run --rm test-runner-mock
+      run: docker compose run --rm test-runner-mock
+      
+    - name: Check Allure results before generating
+      run: |
+        echo "Checking Allure results..."
+        if [ -d "allure-results" ]; then
+          echo "Allure results directory exists"
+          ls -la allure-results/ || echo "Allure results directory is empty"
+          find allure-results -type f | head -10 || echo "No files found in allure-results"
+        else
+          echo "Warning: allure-results directory does not exist"
+        fi
       
     - name: Generate Allure report
       run: |
-        docker compose -f docker-compose.ci.yml run --rm test-framework allure generate allure-results --clean -o allure-report
+        # Generate Allure report
+        docker compose run --rm test-framework allure generate allure-results --clean -o allure-report || echo "Allure generation failed"
+        
+        # Verify report was generated
+        ls -la allure-report/ || echo "Allure report directory not found"
+        ls -la allure-results/ || echo "Allure results directory not found"
+        
+        # Check if index.html exists
+        if [ -f "allure-report/index.html" ]; then
+          echo "Allure report generated successfully"
+          echo "Report structure:"
+          ls -la allure-report/ | head -20
+          echo "Checking for required files..."
+          [ -f "allure-report/index.html" ] && echo "✓ index.html exists" || echo "✗ index.html missing"
+          [ -d "allure-report/data" ] && echo "✓ data directory exists" || echo "✗ data directory missing"
+          [ -f "allure-report/plugins" ] && echo "✓ plugins exists" || echo "✗ plugins missing"
+          echo "Report file count: $(find allure-report -type f | wc -l)"
+        else
+          echo "Warning: Allure report index.html not found"
+          echo "Contents of allure-report:"
+          ls -la allure-report/ || echo "Directory is empty or doesn't exist"
+        fi
+        
+    - name: Upload Allure results (raw)
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: allure-results-raw
+        path: allure-results/
+        retention-days: 30
+        
+    - name: Upload Allure report (HTML)
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: allure-report-html
+        path: allure-report/
+        retention-days: 30
+        if-no-files-found: warn
         
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -65,17 +118,7 @@ jobs:
       with:
         name: test-results
         path: |
-          allure-results/
-          allure-report/
           reports/
-        retention-days: 30
-        
-    - name: Upload Allure report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: allure-report
-        path: allure-report/
         retention-days: 30
 
   test-matrix:
@@ -95,19 +138,19 @@ jobs:
       run: docker compose build --no-cache test-framework
       
     - name: Start services
-      run: docker compose -f docker-compose.ci.yml up -d
+      run: docker compose up -d
       
     - name: Run ${{ matrix.test-type }} tests
       run: |
         case "${{ matrix.test-type }}" in
           "mock")
-            docker compose -f docker-compose.ci.yml run --rm test-runner-mock
+            docker compose run --rm test-runner-mock
             ;;
           "external")
-            docker compose -f docker-compose.ci.yml run --rm test-runner-external
+            docker compose run --rm test-runner-external
             ;;
           "unit")
-            docker compose -f docker-compose.unit.yml run --rm test-framework
+            docker compose run --rm test-framework pytest -v -m unit
             ;;
         esac
         
